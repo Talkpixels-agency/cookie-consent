@@ -9,14 +9,34 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            let date = new Date();
+            date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    }
+
     function getConsent() {
-        const consent = localStorage.getItem(COOKIE_NAME);
+        let consent = getCookie(COOKIE_NAME);
+        if (!consent) {
+            consent = localStorage.getItem(COOKIE_NAME);
+        }
         return consent ? JSON.parse(consent) : null;
     }
 
     function setConsent(consent) {
+        setCookie(COOKIE_NAME, JSON.stringify(consent), 180);
         localStorage.setItem(COOKIE_NAME, JSON.stringify(consent));
-        logDebug("Consent updated: " + JSON.stringify(consent));
+        logDebug("Consent opgeslagen: " + JSON.stringify(consent));
     }
 
     function applyConsent(consent) {
@@ -31,11 +51,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     newScript.textContent = script.textContent;
                 }
                 script.parentNode.replaceChild(newScript, script);
-                logDebug(`Activated script: ${script.src || "inline script"}`);
+                logDebug(`Script geactiveerd: ${script.src || "inline script"}`);
             }
         });
 
-        // Google Consent Mode bijwerken
+        // Google Consent Mode updaten
         if (typeof gtag === "function") {
             gtag('consent', 'update', {
                 'ad_storage': consent.marketing ? 'granted' : 'denied',
@@ -49,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
             logDebug('Google Consent Mode bijgewerkt: ' + JSON.stringify(consent));
         }
 
-        // Google Tag Manager herladen
+        // Google Tag Manager triggeren
         if (typeof window.dataLayer !== "undefined") {
             window.dataLayer.push({ event: "cookieConsentUpdated" });
             logDebug("DataLayer event verzonden");
