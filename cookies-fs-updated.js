@@ -34,17 +34,41 @@ document.addEventListener("DOMContentLoaded", function () {
                 logDebug(`Activated script: ${script.src || "inline script"}`);
             }
         });
+
+        // Google Consent Mode bijwerken
+        if (typeof gtag === "function") {
+            gtag('consent', 'update', {
+                'ad_storage': consent.marketing ? 'granted' : 'denied',
+                'ad_user_data': consent.marketing ? 'granted' : 'denied',
+                'analytics_storage': consent.analytics ? 'granted' : 'denied',
+                'ad_personalization': consent.personalization ? 'granted' : 'denied',
+                'personalization_storage': consent.personalization ? 'granted' : 'denied',
+                'functionality_storage': 'granted',
+                'security_storage': 'granted',
+            });
+            logDebug('Google Consent Mode bijgewerkt: ' + JSON.stringify(consent));
+        }
+
+        // Google Tag Manager herladen
+        if (typeof window.dataLayer !== "undefined") {
+            window.dataLayer.push({ event: "cookieConsentUpdated" });
+            logDebug("DataLayer event verzonden");
+        }
     }
 
     function handleConsentAction(action) {
         let consent = getConsent() || { essential: true, analytics: false, marketing: false, personalization: false };
+
         if (action === "allow") {
             consent = { essential: true, analytics: true, marketing: true, personalization: true };
         } else if (action === "deny") {
             consent = { essential: true, analytics: false, marketing: false, personalization: false };
         }
+
         setConsent(consent);
         applyConsent(consent);
+
+        // Banner verbergen als Webflow interacties niet worden gebruikt
         if (!USE_WEBFLOW_INTERACTIONS) {
             document.querySelector('[fs-cc="banner"]').style.display = "none";
         }
